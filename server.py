@@ -1,63 +1,170 @@
-import socket 
-from _thread import *
+import socketserver
+import threading
+
+HOST = ''
+PORT = 9009
+lock = threading.Lock()  # syncronized 동기화 진행하는 스레드 생성
 
 
-# 쓰레드에서 실행되는 코드입니다. 
+class UserManager:  # 사용자관리 및 채팅 메세지 전송을 담당하는 클래스
+    # ① 채팅 서버로 입장한 사용자의 등록
+    # ② 채팅을 종료하는 사용자의 퇴장 관리
+    # ③ 사용자가 입장하고 퇴장하는 관리
+    # ④ 사용자가 입력한 메세지를 채팅 서버에 접속한 모두에게 전송
 
-# 접속한 클라이언트마다 새로운 쓰레드가 생성되어 통신을 하게 됩니다. 
-def threaded(client_socket, addr): 
+    def __init__(self):
+        self.users = {}  # 사용자의 등록 정보를 담을 사전 {사용자 이름:(소켓,주소),...}
 
-    print('Connected by :', addr[0], ':', addr[1]) 
+    def addUser(self, username, conn, addr):  # 사용자 ID를 self.users에 추가하는 함수
+        if username in self.users:  # 이미 등록된 사용자라면
+            conn.send('이미 등록된 사용자입니다.\n'.encode())
+            return None
+
+        # 새로운 사용자를 등록함
+        lock.acquire()  # 스레드 동기화를 막기위한 락
+        self.users[username] = (conn, addr)
+        lock.release()  # 업데이트 후 락 해제
+
+        self.sendMessageToAll('[%s]님이 입장했습니다.' % username)
+        print('+++ 대화 참여자 수 [%d]' % len(self.users))
+
+        return username
+
+    def removeUser(self, username):  # 사용자를 제거하는 함수
+        if username not in self.users:
+            return
+
+        lock.acquire()
+        del self.users[username]
+        lock.release()
+
+        self.sendMessageToAll('[%s]님이 퇴장했습니다.' % username)
+        print('--- 대화 참여자 수 [%d]' % len(self.users))
+
+    def messageHandler(self, username, msg):  # 전송한 msg를 처리하는 부분
+        if msg[0] != '/':  # 보낸 메세지의 첫문자가 '/'가 아니면
+            self.sendMessageToAll('[%s] %s' % (username, msg))
+            return
+
+        if msg.strip() == '/quit':  # 보낸 메세지가 'quit'이면
+            self.removeUser(username)
+            return -1
+
+    def sendMessageToAll(self, msg):
+        for conn, addr in self.users.values():
+            conn.send(msg.encode())
 
 
+class MyTcpHandler(socketserver.BaseRequestHandler):
+    userman = UserManager()
 
-    # 클라이언트가 접속을 끊을 때 까지 반복합니다. 
-    while True: 
+    def handle(self):  # 클라이언트가 접속시 클라이언트 주소 출력
+        print('[%s] 연결됨' % self.client_address[0])
 
         try:
+            username = self.registerUsername()
+            msg = self.request.recv(1024)
+            while msg:
+                print(msg.decode())
+                if self.userman.messageHandler(username, msg.decode()) == -1:
+                    self.request.close()
+                    break
+                msg = self.request.recv(1024)
 
-            # 데이터가 수신되면 클라이언트에 다시 전송합니다.(에코)
-            data = client_socket.recv(1024)
+        except Exception as e:
+            print(e)
 
-            if not data: 
-                print('Disconnected by ' + addr[0],':',addr[1])
-                break
+        print('[%s] 접속종료' % self.client_address[0])
+        self.userman.removeUser(username)
 
-            print('Received from ' + addr[0],':',addr[1] , data.decode())
-
-            client_socket.send(data) 
-
-        except ConnectionResetError as e:
-
-            print('Disconnected by ' + addr[0],':',addr[1])
-            break
-             
-    client_socket.close() 
-
-
-HOST = '127.0.0.1'
-PORT = 9999
-
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
-server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server_socket.bind((HOST, PORT)) 
-server_socket.listen() 
-
-print('server start')
+    def registerUsername(self):
+        while True:
+            self.request.send('로그인ID:'.encode())
+            username = self.request.recv(1024)
+            username = username.decode().strip()
+            if self.userman.addUser(username, self.request, self.client_address):
+                return username
 
 
-# 클라이언트가 접속하면 accept 함수에서 새로운 소켓을 리턴합니다.
-
-# 새로운 쓰레드에서 해당 소켓을 사용하여 통신을 하게 됩니다. 
-while True: 
-
-    print('wait')
+class ChatingServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    pass
 
 
-    client_socket, addr = server_socket.accept() 
-    start_new_thread(threaded, (client_socket, addr)) 
+def runServer():
+    print('+++ 채팅 서버를 시작합니다.')
+    print('+++ 채텅 서버를 끝내려면 Ctrl-C를 누르세요.')
 
-server_socket.close()
+    try:
+        server = ChatingServer((HOST, PORT), MyTcpHandler)
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print('--- 채팅 서버를 종료합니다.')
+        server.shutdown()
+        server.server_close()
+
+
+runServer()
+
+# import socket
+# from _thread import *
+#
+#
+# # 쓰레드에서 실행되는 코드입니다.
+#
+# # 접속한 클라이언트마다 새로운 쓰레드가 생성되어 통신을 하게 됩니다.
+# def threaded(client_socket, addr):
+#
+#     print('Connected by :', addr[0], ':', addr[1])
+#
+#
+#
+#     # 클라이언트가 접속을 끊을 때 까지 반복합니다.
+#     while True:
+#
+#         try:
+#
+#             # 데이터가 수신되면 클라이언트에 다시 전송합니다.(에코)
+#             data = client_socket.recv(1024)
+#
+#             if not data:
+#                 print('Disconnected by ' + addr[0],':',addr[1])
+#                 break
+#
+#             print('Received from ' + addr[0],':',addr[1] , data.decode())
+#
+#             client_socket.send(data)
+#
+#         except ConnectionResetError as e:
+#
+#             print('Disconnected by ' + addr[0],':',addr[1])
+#             break
+#
+#     client_socket.close()
+#
+#
+# HOST = '127.0.0.1'
+# PORT = 9999
+#
+# server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+# server_socket.bind((HOST, PORT))
+# server_socket.listen()
+#
+# print('server start')
+#
+#
+# # 클라이언트가 접속하면 accept 함수에서 새로운 소켓을 리턴합니다.
+#
+# # 새로운 쓰레드에서 해당 소켓을 사용하여 통신을 하게 됩니다.
+# while True:
+#
+#     print('wait')
+#
+#
+#     client_socket, addr = server_socket.accept()
+#     start_new_thread(threaded, (client_socket, addr))
+#
+# server_socket.close()
 
 
 
