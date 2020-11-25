@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QPushButton, QLineEdit, QLabel,
-    QTextBrowser, QVBoxLayout)
+    QApplication, QWidget, QPushButton, QLineEdit, 
+    QLabel, QTextBrowser, QVBoxLayout)
 
 
 class Client(QWidget):
@@ -15,6 +15,7 @@ class Client(QWidget):
         btnLogin.setText('Login')
         btnCancle = QPushButton(self)
         btnCancle.setText('Cancle')
+        btnCancle.pressed.connect(self.close)
 
         btnLogin.move(200, 150)
         btnCancle.move(450, 150)
@@ -34,17 +35,34 @@ class Client(QWidget):
 
         inputIP = QLineEdit(self)
         inputIP.move(100, 20)
+        self.inputIP.returnPressed.connect(self.getIP)
         inputPass = QLineEdit(self)
         inputPass.move(420, 20)
+        self.inputPass.returnPressed.connect(self.getPass)
         inputPort = QLineEdit(self)
         inputPort.move(100, 70)
+        self.inputPort.returnPressed.connect(self.getPort)
         inputName = QLineEdit(self)
         inputName.move(420, 70)
+        self.inputName.returnPressed.connect(self.getName)
 
         self.setWindowTitle('Computer Network Chat')
         self.move(400, 100)
         self.resize(700, 200)
         self.show()
+
+    def getIP(self):
+        text = self.inputIP.text()
+
+    def getPass(self):
+        text = self.inputPass.text()
+
+    def getPort(self):
+        text = self.inputPort.text()
+    
+    def getName(self):
+        text = self.inputName.text()
+
 
 
 class ChatRoom(QWidget):
@@ -53,20 +71,50 @@ class ChatRoom(QWidget):
         self.initUI()
 
     def initUI(self):
+        self.le = QLineEdit()
+        self.le.returnPressed.connect(self.append_text)
+
+        self.tb = QTextBrowser()
+        self.tb.setAcceptRichText(True)
+        self.tb.setOpenExternalLinks(True)
+
+        self.btnSend = QPushButton('Send')
+        self.btnSend.pressed.connect(self.append_text)
+        self.btnFile = QPushButton('File')
+        # self.btnFile.pressed.connect()
+        
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(self.tb, 0)
+        vbox.addWidget(self.le, 1)
+        vbox.addWidget(self.btnSend, 2)
+        vbox.addWidget(self.btnFile, 2)
+
+        self.setLayout(vbox)
+
         self.setWindowTitle('Chat Room')
         self.move(400, 100)
         self.resize(800, 800)
         self.show()
 
+    def append_text(self):
+        text = self.le.text()
+        self.tb.append(text)
+        self.le.clear()
+
+
+
+
+
 
 if __name__ == '__main__':
-   #app = QApplication(sys.argv)
-   #ex = Client()
-   #sys.exit(app.exec_())
-   
    app = QApplication(sys.argv)
-   ex = ChatRoom()
+   ex = Client()
    sys.exit(app.exec_())
+   
+#    app = QApplication(sys.argv)
+#    ex = ChatRoom()
+#    sys.exit(app.exec_())
 
 
 # from socket import *
