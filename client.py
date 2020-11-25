@@ -1,4 +1,5 @@
-import socket 
+import socket
+from threading import Thread
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QPushButton, QLineEdit, 
@@ -68,12 +69,8 @@ class Client(QWidget):
 
 HOST = '127.0.0.1'
 PORT = 9999
-
-client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM) 
-
-client_socket.connect((HOST, PORT)) 
-
-
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.connect((HOST, PORT))
 
 class ChatRoom(QWidget):
     def __init__(self):
@@ -81,10 +78,10 @@ class ChatRoom(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.le = QLineEdit()
+        self.le = QLineEdit(self)
         self.le.returnPressed.connect(self.getText)
 
-        self.tb = QTextBrowser()
+        self.tb = QTextBrowser(self)
         self.tb.setAcceptRichText(True)
         self.tb.setOpenExternalLinks(True)
 
@@ -124,22 +121,49 @@ class ChatRoom(QWidget):
         message = self.le.text()
             # if message == 'quit':
             #     break
-
-        client_socket.send(message.encode()) 
-        data = client_socket.recv(1024) 
-
-        print('Received from the server :',repr(data.decode())) 
-        self.tb.append(data.decode())
+        sock.send(message.encode())
+        data = sock.recv(1024)
+        print('Received from the server :',repr(data.decode()))
+        self.tb.append(data.decode()) 
         self.le.clear()
-
         # client_socket.close() 
 
+app = QApplication(sys.argv)
+ex = ChatRoom()
+
+def rcvMsg(sock):
+    while True:
+        try:
+            data = sock.recv(1024)
+            if not data:
+                break
+            print('Received from the server :',repr(data.decode()))
+            ex.tb.append(data.decode())
+        except:
+            print('fail')
+            pass
+
+def runChat():
+    t = Thread(target=rcvMsg, args=(sock,))
+    t.daemon = True
+    t.start()
+
+            
 
 
 
 if __name__ == '__main__':
-   app = QApplication(sys.argv)
-   ex = ChatRoom()
-   sys.exit(app.exec_())
+   #ex.runChat()
+   #ex.rcvMsg()
+#    while True:
+#         data = sock.recv(1024)
+#         if not data:
+#             break
+#         print('Received from the server :',repr(data.decode()))
+#         ex.tb.append(data.decode())
+    
+
+    runChat()
+    sys.exit(app.exec_())
    
 
