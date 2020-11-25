@@ -1,3 +1,35 @@
+# import socket 
+
+
+# HOST = '127.0.0.1'
+# PORT = 9999
+
+# client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM) 
+
+# client_socket.connect((HOST, PORT)) 
+
+
+
+# # 키보드로 입력한 문자열을 서버로 전송하고 
+
+# # 서버에서 에코되어 돌아오는 메시지를 받으면 화면에 출력합니다. 
+
+# # quit를 입력할 때 까지 반복합니다. 
+# while True: 
+
+#     message = input('Enter Message : ')
+#     if message == 'quit':
+#     	break
+
+#     client_socket.send(message.encode()) 
+#     data = client_socket.recv(1024) 
+
+#     print('Received from the server :',repr(data.decode())) 
+
+
+# client_socket.close() 
+
+
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QPushButton, QLineEdit, 
@@ -112,29 +144,3 @@ if __name__ == '__main__':
    ex = Client()
    sys.exit(app.exec_())
    
-#    app = QApplication(sys.argv)
-#    ex = ChatRoom()
-#    sys.exit(app.exec_())
-
-
-# from socket import *
-# from select import *
-# import sys
-# from time import ctime
-
-# HOST = '127.0.0.1'
-# PORT = 10000
-# BUFSIZE = 1024
-# ADDR = (HOST,PORT)
-
-# clientSocket = socket(AF_INET, SOCK_STREAM)# 서버에 접속하기 위한 소켓을 생성한다.
-
-# try:
-# 	clientSocket.connect(ADDR)# 서버에 접속을 시도한다.
-# 	clientSocket.send('Hello!'.encode())	# 서버에 메시지 전달
-
-# except  Exception as e:
-#     print('%s:%s'%ADDR)
-#     sys.exit()
-
-# print('connect is success')

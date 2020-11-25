@@ -1,36 +1,64 @@
-# from socket import *
-# from select import *
+# import socket 
+# from _thread import *
 
-# HOST = ''
-# PORT = 10000
-# BUFSIZE = 1024
-# ADDR = (HOST, PORT)
 
-# # 소켓 생성
-# serverSocket = socket(AF_INET, SOCK_STREAM)
+# # 쓰레드에서 실행되는 코드입니다. 
 
-# # 소켓 주소 정보 할당 
-# serverSocket.bind(ADDR)
-# print('bind')
+# # 접속한 클라이언트마다 새로운 쓰레드가 생성되어 통신을 하게 됩니다. 
+# def threaded(client_socket, addr): 
 
-# # 연결 수신 대기 상태
-# serverSocket.listen(100)
-# print('listen')
+#     print('Connected by :', addr[0], ':', addr[1]) 
 
-# # 연결 수락
-# clientSocekt, addr_info = serverSocket.accept()
-# print('accept')
-# print('--client information--')
-# print(clientSocekt)
 
-# # 클라이언트로부터 메시지를 가져옴
-# data = clientSocekt.recv(65535)
-# print('recieve data : ',data.decode())
 
-# # 소켓 종료 
-# clientSocekt.close()
-# serverSocket.close()
-# print('close')
+#     # 클라이언트가 접속을 끊을 때 까지 반복합니다. 
+#     while True: 
+
+#         try:
+
+#             # 데이터가 수신되면 클라이언트에 다시 전송합니다.(에코)
+#             data = client_socket.recv(1024)
+
+#             if not data: 
+#                 print('Disconnected by ' + addr[0],':',addr[1])
+#                 break
+
+#             print('Received from ' + addr[0],':',addr[1] , data.decode())
+
+#             client_socket.send(data) 
+
+#         except ConnectionResetError as e:
+
+#             print('Disconnected by ' + addr[0],':',addr[1])
+#             break
+             
+#     client_socket.close() 
+
+
+# HOST = '127.0.0.1'
+# PORT = 9999
+
+# server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+# server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+# server_socket.bind((HOST, PORT)) 
+# server_socket.listen() 
+
+# print('server start')
+
+
+# # 클라이언트가 접속하면 accept 함수에서 새로운 소켓을 리턴합니다.
+
+# # 새로운 쓰레드에서 해당 소켓을 사용하여 통신을 하게 됩니다. 
+# while True: 
+
+#     print('wait')
+
+
+#     client_socket, addr = server_socket.accept() 
+#     start_new_thread(threaded, (client_socket, addr)) 
+
+# server_socket.close()
+
 
 import sys
 from PyQt5.QtWidgets import (
