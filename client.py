@@ -4,11 +4,12 @@ import sys
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QPushButton, QLineEdit, 
     QLabel, QTextBrowser, QVBoxLayout, QDialog, QMainWindow)
-<<<<<<< HEAD
+import time
 
 
-=======
->>>>>>> 0a021faa603e0ee21a6dac3f8a3747f6109ae701
+
+isLogin = False
+
 class ChatRoom(QWidget):
     def __init__(self):
         super().__init__()
@@ -29,9 +30,7 @@ class ChatRoom(QWidget):
         self.lb5.setText('Password')
 
         self.inputIP = QLineEdit(self)
-        # self.inputIP.returnPressed.connect(self.getIP)
         self.inputPort = QLineEdit(self)
-        # self.inputPort.returnPressed.connect(self.getPort)
         self.inputName = QLineEdit(self)
         self.inputPass = QLineEdit(self)
         
@@ -43,9 +42,7 @@ class ChatRoom(QWidget):
         self.tb.setOpenExternalLinks(True)
 
         self.btnSend = QPushButton('Send')
-        # self.btnSend.pressed.connect(self.getText)
         self.btnFile = QPushButton('File')
-        # self.btnFile.pressed.connect()
         self.btnQuit = QPushButton('Quit')
         self.btnQuit.pressed.connect(self.onQuit)
         
@@ -82,18 +79,36 @@ class ChatRoom(QWidget):
         self.sock.connect((self.host, int(self.port)))
         runChat(self, self.sock)
         self.sock.send((self.name+' '+self.password).encode())
-<<<<<<< HEAD
-   
-=======
->>>>>>> 0a021faa603e0ee21a6dac3f8a3747f6109ae701
+        self.start = time.time()
+        global isLogin 
+        isLogin = True
+        self.inputName.clear()
+        self.inputPass.clear()
+        # print(self.start)
+
 
     def onQuit(self):
-        self.sock.send('/quit'.encode())
-        self.tb.append('채팅이 종료되었습니다.\n')
+        global isLogin
+        if isLogin:
+          self.sock.send('quit'.encode())
+          isLogin = False
+        #   self.inputPort.clear()
+        #   self.inputIP.clear()
 
     def getText(self):
-        self.message = self.le.text()
-        self.sock.send(self.message.encode())
+        self.timeTerm = time.time() - self.start
+
+        if float(self.timeTerm) > 10:
+            print('timeover')
+            self.sock.send('timeover'.encode())
+            self.inputName.setText(self.name)
+            self.inputPass.setText(self.password)
+            global isLogin
+            isLogin = False
+        else:
+            self.message = self.le.text()
+            self.sock.send(self.message.encode())
+            self.start = time.time()
         self.le.clear()
 
 
@@ -120,7 +135,6 @@ def runChat(ex, sock):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = ChatRoom()
-    # runChat(ex)
     sys.exit(app.exec_())
    
 

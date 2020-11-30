@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
     QApplication, QWidget, QPushButton, QLineEdit, 
     QLabel, QTextBrowser)
 from PyQt5.QtCore import QObject, QThread, QMutex
-
+import time
 
 # HOST = '127.0.0.1'
 # PORT = 9999
@@ -16,6 +16,8 @@ lock = threading.Lock() # syncronized 동기화 진행하는 스레드 생성
 
 PASSWORD = 0
 isFalse = True
+isSame = False
+TimeOverUsers = []
 
 class UserManager: 
             # 사용자관리 및 채팅 메세지 전송을 담당하는 클래스
@@ -29,25 +31,39 @@ class UserManager:
 
    def addUser(self, username, password, conn, addr): # 사용자 ID를 self.users에 추가하는 함수
         global isFalse
-        isFalse
+        global TimeOverUsers 
+        global isSame       
         if isFalse:
             if password != PASSWORD:
                 conn.send('비밀번호가 잘못되었습니다.\n'.encode())
                 return None
         isFalse = False
+        
         if username in self.users: # 이미 등록된 사용자라면
-            conn.send('이미 등록된 사용자입니다.\n'.encode())
-            #  특정 연결된 사용자(소켓)에게만 보내는 것.
-            return None
-        if username == '/quit':
+            if str(username) in TimeOverUsers: # 강제로 튕긴 사용자라면
+                # print('재접속')
+                if username in TimeOverUsers:
+                    TimeOverUsers.remove(username)
+                lock.acquire() # 스레드 동기화를 막기위한 락
+                self.users[username] = (conn, addr) #(소켓, 주소)
+                lock.release() # 업데이트 후 락 해제
+                self.sendMessageToAll('[%s]님이 재접속 되었습니다.\n' %username)
+                print('+++ 대화 참여자 수 [%d]' %len(self.users))
+                return username
+            else:
+                isSame = True
+                conn.send('이미 등록된 사용자입니다.\n'.encode())
+                return None
+        
+        if username == 'quit':
+            if username in TimeOverUsers:
+                TimeOverUsers.remove(username)
             return None
 
         # 새로운 사용자를 등록함
         lock.acquire() # 스레드 동기화를 막기위한 락
-        # mutex.lock()
         self.users[username] = (conn, addr) #(소켓, 주소)
         lock.release() # 업데이트 후 락 해제
-        # mutex.unlock()
 
         # self.users.append
 
@@ -61,22 +77,35 @@ class UserManager:
             return
 
         lock.acquire()
-        # mutex.lock()
         del self.users[username]
         lock.release()
-        # mutex.unlock()
 
         self.sendMessageToAll('[%s]님이 퇴장했습니다.' %username)
         print('--- 대화 참여자 수 [%d]' %len(self.users))
 
    def messageHandler(self, username, msg): # 전송한 msg를 처리하는 부분
-      if msg[0] != '/': # 보낸 메세지의 첫문자가 '/'가 아니면
-         self.sendMessageToAll('[%s] %s' %(username, msg))
-         return
+        global TimeOverUsers
 
-      if msg.strip() == '/quit': # 보낸 메세지가 'quit'이면
-         self.removeUser(username)
-         return -1
+        if msg.strip() == 'quit': # 보낸 메세지가 'quit'이면
+            self.removeUser(username)
+            return -1
+            
+        if msg.strip() == 'timeover':
+            # self.removeUser(username)
+            # 전역 배열을 만들어서 여기에 username 저장하고,
+            # registeruser 부분에서 이 배열에 만약에 저장되어 있는 애면
+            # addr만 바꿔줌
+            if username not in TimeOverUsers:
+                TimeOverUsers.append(username)
+            # print(TimeOverUsers)
+            print('--- 대화 참여자 수 [%d]' %len(self.users))
+            return -2
+
+        if msg[0] != '/': # 보낸 메세지의 첫문자가 '/'가 아니면
+            self.sendMessageToAll('[%s] %s' %(username, msg))
+            return
+
+    
 
    def sendMessageToAll(self, msg):
       for conn, addr in self.users.values():
@@ -90,27 +119,38 @@ class MyTcpHandler(socketserver.BaseRequestHandler):
         print('[%s] 연결됨' %self.client_address[1])
         global isFalse
         isFalse = True
+        global isSame
+        isSame = False
         try:
             username = self.registerUsername()
-
-            if username == '/quit':
+            # print(username)
+            if username == 'quit':
+                self.request.send('채팅이 종료되었습니다.\n'.encode())
                 self.request.close()
-            elif isFalse:
+            elif username == 'false':
                 self.request.close()
             else:
                 msg = self.request.recv(1024)
                 while msg:
-                    print(msg.decode())
-                    if self.userman.messageHandler(username, msg.decode()) == -1:
-                        self.request.close()
+                    # print(msg.decode())
+                    x = self.userman.messageHandler(username, msg.decode())
+                    if x == -1 or x == -2:
+                        if x == -1:
+                            self.request.send('채팅이 종료되었습니다.\n'.encode())
+                            self.request.close()
+                        else:
+                            self.request.send('시간이 초과되었습니다'.encode())
+                            self.userman.sendMessageToAll('[%s]님의 연결이 끊어졌습니다.\n' %username)
+                            self.request.close()        
                         break
                     msg = self.request.recv(1024)
                     
         except Exception as e:
             print(e)
+            self.userman.removeUser(username)
 
         print('[%s] 접속종료' %self.client_address[1])
-        self.userman.removeUser(username)
+        # self.userman.removeUser(username)
 
    def registerUsername(self):
         while True:
@@ -126,6 +166,8 @@ class MyTcpHandler(socketserver.BaseRequestHandler):
             if self.userman.addUser(username, int(password), self.request, self.client_address):
                 return username
             if isFalse:
+                return 'false'
+            if isSame:
                 return 'false'
 
 class ChatingServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
