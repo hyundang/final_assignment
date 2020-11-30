@@ -8,76 +8,6 @@ from PyQt5.QtWidgets import (
 
 
 =======
-
-
-
-# class Client(QWidget):
-
-#     def __init__(self):
-#         super().__init__()
-#         self.initUI()
-
-#     def initUI(self):
-#         btnLogin = QPushButton(self)
-#         btnLogin.setText('Login')
-#         btnLogin.pressed.connect(self.onLoginClick)
-#         btnCancle = QPushButton(self)
-#         btnCancle.setText('Cancle')
-#         btnCancle.pressed.connect(self.close)
-
-#         btnLogin.move(200, 150)
-#         btnCancle.move(450, 150)
-
-#         self.lb1 = QLabel(self)
-#         self.lb1.move(30, 20)
-#         self.lb1.setText('server IP')
-#         self.lb2 = QLabel(self)
-#         self.lb2.move(350, 20)
-#         self.lb2.setText('password')
-#         self.lb3 = QLabel(self)
-#         self.lb3.move(30, 70)
-#         self.lb3.setText('Port')
-#         self.lb4 = QLabel(self)
-#         self.lb4.move(350, 70)
-#         self.lb4.setText('Name')
-
-#         self.inputIP = QLineEdit(self)
-#         self.inputIP.move(100, 20)
-#         self.inputIP.returnPressed.connect(self.getIP)
-#         self.inputPass = QLineEdit(self)
-#         self.inputPass.move(420, 20)
-#         self.inputPass.returnPressed.connect(self.getPass)
-#         self.inputPort = QLineEdit(self)
-#         self.inputPort.move(100, 70)
-#         self.inputPort.returnPressed.connect(self.getPort)
-#         self.inputName = QLineEdit(self)
-#         self.inputName.move(420, 70)
-#         self.inputName.returnPressed.connect(self.getName)
-
-#         self.setWindowTitle('Computer Network Chat')
-#         self.move(400, 100)
-#         self.resize(700, 200)
-#         # self.show()
-
-#     # def onLoginClick(self):
-#     #     chat = ChatRoom(self)
-#     #     chat.exec_()
-
-
-#     def getIP(self):
-#         text = self.inputIP.text()
-
-#     def getPass(self):
-#         text = self.inputPass.text()
-
-#     def getPort(self):
-#         text = self.inputPort.text()
-    
-#     def getName(self):
-#         text = self.inputName.text()
-
-
-
 >>>>>>> 0a021faa603e0ee21a6dac3f8a3747f6109ae701
 class ChatRoom(QWidget):
     def __init__(self):
@@ -155,7 +85,6 @@ class ChatRoom(QWidget):
 <<<<<<< HEAD
    
 =======
-        # self.sock.send(self.password.encode())
 >>>>>>> 0a021faa603e0ee21a6dac3f8a3747f6109ae701
 
     def onQuit(self):
