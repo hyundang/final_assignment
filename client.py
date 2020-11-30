@@ -88,11 +88,17 @@ class ChatRoom(QWidget):
         self.lb1.setText('server IP')
         self.lb3 = QLabel(self)
         self.lb3.setText('Port')
+        self.lb4 = QLabel(self)
+        self.lb4.setText('Name')
+        self.lb5 = QLabel(self)
+        self.lb5.setText('Password')
 
         self.inputIP = QLineEdit(self)
         # self.inputIP.returnPressed.connect(self.getIP)
         self.inputPort = QLineEdit(self)
         # self.inputPort.returnPressed.connect(self.getPort)
+        self.inputName = QLineEdit(self)
+        self.inputPass = QLineEdit(self)
         
         self.le = QLineEdit(self)
         self.le.returnPressed.connect(self.getText)
@@ -114,6 +120,10 @@ class ChatRoom(QWidget):
         vbox.addWidget(self.inputIP)
         vbox.addWidget(self.lb3)
         vbox.addWidget(self.inputPort)
+        vbox.addWidget(self.lb4)
+        vbox.addWidget(self.inputName)
+        vbox.addWidget(self.lb5)
+        vbox.addWidget(self.inputPass)
         vbox.addWidget(self.btnLogin)
         vbox.addWidget(self.tb)
         vbox.addWidget(self.le)
@@ -131,14 +141,17 @@ class ChatRoom(QWidget):
     def onLoginClick(self):
         self.host = self.inputIP.text()
         self.port = self.inputPort.text()
+        self.name = self.inputName.text()
+        self.password = self.inputPass.text()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((self.host, int(self.port)))
         runChat(self, self.sock)
-        
+        self.sock.send((self.name+' '+self.password).encode())
+        # self.sock.send(self.password.encode())
 
     def onQuit(self):
         self.sock.send('/quit'.encode())
-        self.tb.append('채팅이 종료되었습니다.')
+        self.tb.append('채팅이 종료되었습니다.\n')
 
     def getText(self):
         self.message = self.le.text()
