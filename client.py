@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
 import time
 
 
-
+TimeLimit = 10
 isLogin = False
 
 class ChatRoom(QWidget):
@@ -96,9 +96,11 @@ class ChatRoom(QWidget):
         #   self.inputIP.clear()
 
     def getText(self):
+        global TimeLimit
+        
         self.timeTerm = time.time() - self.start
 
-        if float(self.timeTerm) > 10:
+        if float(self.timeTerm) > TimeLimit:
             print('timeover')
             self.sock.send('timeover'.encode())
             self.inputName.setText(self.name)
