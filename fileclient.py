@@ -1,92 +1,82 @@
 import socket
 from threading import Thread
+from os.path import exists, getsize
 
 HOST = 'localhost'
 PORT = 9009
 
-def sendFileToServer(filename):
-   data_transferred = 0
+def sendFileToServer(sock, msg):
+	sock.send(msg.encode())
+	filename = msg[3:]
+	if not exists(filename): # 파일이 해당 디렉터리에 존재하지 않으면
+			return # 함수를 빠져 나온다.
+	filesize = getsize(filename)
+	sock.send(str(filesize).encode())
 
-   with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-      sock.connect((HOST,PORT))
-      sock.sendall(filename.encode())
-
-      data = sock.recv(1024)
-      if not data:
-         print('파일[%s]: 서버에 존재하지 않거나 전송중 오류발생' %filename)
-         return
-
-      with open('D:/final_assignment1/download/download' + filename, 'wb') as f:
-         try:
-            while  data:
-               f.write(data)
-               data_transferred += len(data)
-               data = sock.recv(1024)
-         except Exception as e:
-            print(e)
-
-   print('파일[%s] 전송종료. 전송량 [%d]' %(filename, data_transferred))
+	with open(filename, 'rb') as f:
+		try: 
+			data = f.read(int(filesize))
+			sock.send(data)
+		except Exception as e:
+			print(e)
+		
+		print('전송완료[%s], 전송량[%s]' %(filename,filesize))
 
 
-def getFileFromServer(filename):
-    
-    filename = input('다운로드 받을 파일이름을 입력하세요:')
-    getFileFromServer(filename)
-
-   data_transferred = 0
-
-   with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-      sock.connect((HOST,PORT))
-      sock.sendall(filename.encode())
-
-      data = sock.recv(1024)
-      if not data:
-         print('파일[%s]: 서버에 존재하지 않거나 전송중 오류발생' %filename)
-         return
-
-      with open('D:/final_assignment1/download/download' + filename, 'wb') as f:
-         try:
-            while  data:
-               f.write(data)
-               data_transferred += len(data)
-               data = sock.recv(1024)
-         except Exception as e:
-            print(e)
-
-   print('파일[%s] 전송종료. 전송량 [%d]' %(filename, data_transferred))
+def getFileFromServer(sock, filename):
+		
+	 sock.sendall(filename.encode())
 
 
 
 
 def rcvMsg(sock):
-    while True:
-        try:
-            data = sock.recv(1024)
-            if not data:
-                break
-            print(data.decode())
-        except:
-            pass
+		while True:
+				try:
+						data = sock.recv(1024)
+						if not data:
+								break
+						if(data.decode() == 'filestart'):
+							fileinfo = sock.recv(1024).decode()
+							fileinfo = fileinfo.split('/')
+							filename = fileinfo[0]
+							filesize = int(fileinfo[1])
+							username = fileinfo[2]
+							
+							with open(f'{username}_download_{filename}', 'wb') as f:
+								try:
+									data = sock.recv(filesize)
+									f.write(data)
+									
+								except Exception as e:
+										print(e)
+						else:
+							print(data.decode())
+						 
+				except:
+						pass
 
 
 def runChat():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.connect((HOST, PORT))
-        t = Thread(target=rcvMsg, args=(sock,))
-        t.daemon = True
-        t.start()
+		with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+				sock.connect((HOST, PORT))
+				t = Thread(target=rcvMsg, args=(sock,))
+				t.daemon = True
+				t.start()
 
-        while True:
-            msg = input()
-            if msg == '/quit':
-                sock.send(msg.encode())
-                break
-            if msg[0] == '/' and msg[1] == 'f' and msg[2] == ' ':
-                msg = msg[3:]
-                sendFileToServer()
+				while True:
+						msg = input()
+						if msg == '/quit':
+								sock.send(msg.encode())
+								break
+						if msg[0] == '/' and msg[1] == 's' and msg[2] == ' ':
+								sendFileToServer(sock, msg)
 
+						if msg[0] == '/' and msg[1] == 'r' and msg[2] == ' ':
+								getFileFromServer(sock, msg)
 
-            sock.send(msg.encode())
-
-
+						else:
+							 sock.send(msg.encode())
+	 
+	 
 runChat()
