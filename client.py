@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
 import time
 from os.path import exists, getsize
 
-TimeLimit = 10
+TimeLimit = 20
 isLogin = False
 
 class ChatRoom(QWidget):
@@ -143,17 +143,15 @@ class ChatRoom(QWidget):
         self.le.clear()
 
     def sendFileToServer(self, msg):
-        print('111111111111')
         filename = msg[3:]
         if not exists(filename): # 파일이 해당 디렉터리에 존재하지 않으면
+            print()
             return # 함수를 빠져 나온다.
         self.sock.send(msg.encode())
-        print('22222222')
         time.sleep(0.5)
         filesize = getsize(filename)
         filesize = str(filesize)
         self.sock.send(filesize.encode())
-        print('33333333333333')
         time.sleep(0.5)
 
         with open(filename, 'rb') as f:
@@ -162,7 +160,6 @@ class ChatRoom(QWidget):
                 self.sock.send(data)
             except Exception as e:
                 print(e)
-        print('44444444444')
         return
 
     def getFileFromServer(self, filename):
@@ -190,10 +187,6 @@ def rcvMsg(sock, ex):
                         
                     except Exception as e:
                             print(e)
-
-
-
-
 
             else: # print('Received from the server :',repr(data.decode()))
                 ex.tb.append(data.decode())
