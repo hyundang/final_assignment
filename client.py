@@ -111,20 +111,21 @@ class ChatRoom(QWidget):
 
     def getText(self):
         global TimeLimit
+        global isLogin
         
         self.timeTerm = time.time() - self.start
         # 새로 채팅을 보내기까지 걸린 시간 측정
 
         if float(self.timeTerm) > TimeLimit:
-            # print('timeover')
-            self.sock.send('timeover'.encode())
-            self.inputName.setText(self.name)
-            self.inputPass.setText(self.password)
-            global isLogin
-            isLogin = False
-            # 채팅 텀이 TimeLimit 이상이라면 강제로 종료됨.
-            # 로그인도 해제되었다고 표시
-            # 이름, 비밀번호 창에 기존 값 넣어줌
+            if isLogin:
+                # print('timeover')
+                self.sock.send('timeover'.encode())
+                self.inputName.setText(self.name)
+                self.inputPass.setText(self.password)
+                isLogin = False
+                # 채팅 텀이 TimeLimit 이상이라면 강제로 종료됨.
+                # 로그인도 해제되었다고 표시
+                # 이름, 비밀번호 창에 기존 값 넣어줌
         else:
             self.message = self.le.text()
             if self.message[0] == '/' and self.message[1] == 's' and self.message[2] == ' ':
