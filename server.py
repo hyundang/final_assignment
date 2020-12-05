@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
     QLabel, QTextBrowser)
 from PyQt5.QtCore import QObject, QThread, QMutex
 import time
+from os.path import exists, getsize
 
 
 lock = threading.Lock() # syncronized 동기화 진행하는 스레드 생성
@@ -107,9 +108,19 @@ class userHandle:
             print('사용자 퇴장: 대화 참여자 수 [%d]' %len(self.users))
             return -2
 
-        if msg[0] != '/': # 보낸 메세지의 첫문자가 '/'가 아니면
+        elif msg[0] != '/': # 보낸 메세지의 첫문자가 '/'가 아니면
             self.SendMsgAll('[%s] %s' %(username, msg))
             return
+
+        elif msg[0] == '/' and msg[1] == 's' and msg[2] == ' ':
+            filename = msg[3:]
+            self.SendMsgAll(f'{username}이 파일 server_{filename}를 보냈습니다.')
+            return 1
+
+        elif msg[0] == '/' and msg[1] == 'r' and msg[2] == ' ':
+            filename = msg[3:]
+            self.SendMsgAll(f'{username}이 파일 {filename}를 다운받았습니다.')
+            return 2
 
     
 
@@ -119,9 +130,9 @@ class userHandle:
           
 
 class SocketHandle(socketserver.BaseRequestHandler):
-   userman = userHandle()
+    userman = userHandle()
     
-   def handle(self): # 클라이언트가 접속시 클라이언트 주소 출력
+    def handle(self): # 클라이언트가 접속시 클라이언트 주소 출력
         print('[%s] 연결됨' %self.client_address[1])
         global isFalse
         isFalse = True
@@ -136,9 +147,12 @@ class SocketHandle(socketserver.BaseRequestHandler):
                 self.request.close()
             else:
                 msg = self.request.recv(1024)
+                print(msg.decode())
                 while msg:
                     x = self.userman.messageHandler(username, msg.decode())
+                    print('이거임1' + str(x))
                     if x == -1 or x == -2: # 채팅 종료하는 경우
+                        print('이거임2' + str(x))
                         if x == -1: # 유저가 quit 버튼 눌렀을 때
                             self.request.send('채팅이 종료되었습니다.\n'.encode())
                             self.request.close()
@@ -147,7 +161,23 @@ class SocketHandle(socketserver.BaseRequestHandler):
                             self.userman.SendMsgAll('[%s]님의 연결이 끊어졌습니다.\n' %username)
                             self.request.close()        
                         break
+                    elif x == 1:
+                        print('이거임3' + str(x))
+                        filename = msg.decode()
+                        filename = filename[3:]
+                        self.getfilefromclient(filename)
+                        msg = self.request.recv(1024)
+                    
+                    
+                    elif x == 2:
+                        print('이거임4' + str(x))
+                        filename = msg.decode()
+                        filename = filename[3:]
+                        self.sendfiletoclient(filename, username)
+                    
+                    print('이거임5' + str(x))
                     msg = self.request.recv(1024)
+                    print(msg.decode())
                     
         except Exception as e:
             print(e)
@@ -156,7 +186,7 @@ class SocketHandle(socketserver.BaseRequestHandler):
         print('[%s] 접속종료' %self.client_address[1])
         # self.userman.deleteUser(username)
 
-   def registerUsername(self):
+    def registerUsername(self):
         while True:
             global isFalse
             username = self.request.recv(1024)
@@ -172,6 +202,41 @@ class SocketHandle(socketserver.BaseRequestHandler):
                 return 'false'
             if isSame:
                 return 'false'
+
+    def getfilefromclient(self, fn):
+        filename = fn
+        msg = self.request.recv(1024)
+        msg = msg.decode()
+        filesize = int(msg)
+        with open(f'server_{filename}', 'wb') as f:
+            try:
+                data = self.request.recv(filesize)
+                f.write(data)
+            except Exception as e:
+                print(e)
+        print(f'수신완료{filename}, 수신량{filesize}')
+        return
+
+    def sendfiletoclient(self, fn, un):
+        username = un
+        filename = fn
+        sendmsg = 'filestart'
+        self.request.send(sendmsg.encode())
+        time.sleep(0.5)
+        filesize = str(getsize(filename))
+        fileinfo = f'{filename}/{filesize}/{username}'
+        fileinfo = fileinfo.encode()
+        filesize = int(filesize)
+        self.request.send(fileinfo)
+        time.sleep(0.5)
+        with open(f'{filename}', 'rb') as f:
+            try:
+                data = f.read(filesize)
+                self.request.send(data)
+            except Exception as e:
+                print(e)
+        print(f'발신완료{filename}, 발신량{filesize}')
+        return
 
 class MakeServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
