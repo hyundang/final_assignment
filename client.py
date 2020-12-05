@@ -154,7 +154,6 @@ class ChatRoom(QWidget):
             self.sock.send(sendnofile.encode())
             time.sleep(0.5)
         else:
-            print('있으면 안되는데')
             self.sock.send(msg.encode())
             time.sleep(0.5)
             filesize = getsize(filename)

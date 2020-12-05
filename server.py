@@ -217,7 +217,6 @@ class SocketHandle(socketserver.BaseRequestHandler):
                 f.write(data)
             except Exception as e:
                 print(e)
-        print(f'수신완료{filename}, 수신량{filesize}')
         return
 
     def sendfiletoclient(self, fn, un):
@@ -238,7 +237,6 @@ class SocketHandle(socketserver.BaseRequestHandler):
                 self.request.send(data)
             except Exception as e:
                 print(e)
-        print(f'발신완료{filename}, 발신량{filesize}')
         return
 
 class MakeServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
