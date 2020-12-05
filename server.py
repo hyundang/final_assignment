@@ -3,10 +3,6 @@ import threading
 import socket
 from _thread import *
 import sys
-from PyQt5.QtWidgets import (
-    QApplication, QWidget, QPushButton, QLineEdit, 
-    QLabel, QTextBrowser)
-from PyQt5.QtCore import QObject, QThread, QMutex
 import time
 from os.path import exists, getsize
 
@@ -108,6 +104,9 @@ class userHandle:
             print('사용자 퇴장: 대화 참여자 수 [%d]' %len(self.users))
             return -2
 
+        elif msg == 'nofile':
+            return 3
+
         elif msg[0] != '/': # 보낸 메세지의 첫문자가 '/'가 아니면
             self.SendMsgAll('[%s] %s' %(username, msg))
             return
@@ -122,6 +121,11 @@ class userHandle:
             self.SendMsgAll(f'{username}이 파일 {filename}를 다운받았습니다.')
             return 2
 
+
+        
+        else:
+            self.SendMsgAll('[%s] %s' %(username, msg))
+            return
     
 
    def SendMsgAll(self, msg):  # 채팅방에 접속한 모든 사용자에게 메세지 전달하는 함수
@@ -150,9 +154,8 @@ class SocketHandle(socketserver.BaseRequestHandler):
                 print(msg.decode())
                 while msg:
                     x = self.userman.messageHandler(username, msg.decode())
-                    print('이거임1' + str(x))
+                    print(x)
                     if x == -1 or x == -2: # 채팅 종료하는 경우
-                        print('이거임2' + str(x))
                         if x == -1: # 유저가 quit 버튼 눌렀을 때
                             self.request.send('채팅이 종료되었습니다.\n'.encode())
                             self.request.close()
@@ -162,20 +165,20 @@ class SocketHandle(socketserver.BaseRequestHandler):
                             self.request.close()        
                         break
                     elif x == 1:
-                        print('이거임3' + str(x))
                         filename = msg.decode()
                         filename = filename[3:]
                         self.getfilefromclient(filename)
-                        msg = self.request.recv(1024)
                     
                     
                     elif x == 2:
-                        print('이거임4' + str(x))
                         filename = msg.decode()
                         filename = filename[3:]
                         self.sendfiletoclient(filename, username)
+
+                    elif x == 3:
+                        sendnofile = '그 파일은 존재하지 않습니다.'
+                        self.request.send(sendnofile.encode())
                     
-                    print('이거임5' + str(x))
                     msg = self.request.recv(1024)
                     print(msg.decode())
                     

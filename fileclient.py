@@ -10,7 +10,8 @@ PORT = 9000
 def sendFileToServer(sock, msg):
 	filename = msg[3:]
 	if not exists(filename): # 파일이 해당 디렉터리에 존재하지 않으면
-			return # 함수를 빠져 나온다.
+		print('없어ㅓㅓㅓㅓㅓㅓㅓㅓㅓ')
+		return # 함수를 빠져 나온다.
 	print(msg)
 	sock.send(msg.encode())
 	time.sleep(0.5)
@@ -30,9 +31,8 @@ def sendFileToServer(sock, msg):
 		# print('전송완료[%s], 전송량[%s]' %(filename,filesize))
 
 
-def getFileFromServer(sock, filename):
-		
-	 sock.sendall(filename.encode())
+def getFileFromServer(sock, filename):		
+	sock.sendall(filename.encode())
 
 
 

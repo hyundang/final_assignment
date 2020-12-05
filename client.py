@@ -128,10 +128,15 @@ class ChatRoom(QWidget):
                 # 이름, 비밀번호 창에 기존 값 넣어줌
         else:
             self.message = self.le.text()
-            if self.message[0] == '/' and self.message[1] == 's' and self.message[2] == ' ':
+            if self.message == '':
+                self.start = time.time()
+                self.le.clear()
+                return
+
+            elif self.message[0] == '/' and self.message[1] == 's' and self.message[2] == ' ':
                 self.sendFileToServer(self.message)
 
-            if self.message[0] == '/' and self.message[1] == 'r' and self.message[2] == ' ':
+            elif self.message[0] == '/' and self.message[1] == 'r' and self.message[2] == ' ':
                 self.getFileFromServer(self.message)
 
             else:
@@ -145,25 +150,33 @@ class ChatRoom(QWidget):
     def sendFileToServer(self, msg):
         filename = msg[3:]
         if not exists(filename): # 파일이 해당 디렉터리에 존재하지 않으면
-            print()
-            return # 함수를 빠져 나온다.
-        self.sock.send(msg.encode())
-        time.sleep(0.5)
-        filesize = getsize(filename)
-        filesize = str(filesize)
-        self.sock.send(filesize.encode())
-        time.sleep(0.5)
-
-        with open(filename, 'rb') as f:
-            try: 
-                data = f.read(int(filesize))
-                self.sock.send(data)
-            except Exception as e:
-                print(e)
+            sendnofile = 'nofile'
+            self.sock.send(sendnofile.encode())
+            time.sleep(0.5)
+        else:
+            print('있으면 안되는데')
+            self.sock.send(msg.encode())
+            time.sleep(0.5)
+            filesize = getsize(filename)
+            filesize = str(filesize)
+            self.sock.send(filesize.encode())
+            time.sleep(0.5)
+            with open(filename, 'rb') as f:
+                try: 
+                    data = f.read(int(filesize))
+                    self.sock.send(data)
+                except Exception as e:
+                    print(e)
         return
 
-    def getFileFromServer(self, filename):
-	    self.sock.sendall(filename.encode())
+    def getFileFromServer(self, msg):
+        filename = msg[3:]
+        if not exists(filename): # 파일이 해당 디렉터리에 존재하지 않으면
+            sendnofile = 'nofile'
+            self.sock.send(sendnofile.encode())
+            time.sleep(0.5)
+        else:
+            self.sock.send(msg.encode())
 
 
 
