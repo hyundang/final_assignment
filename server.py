@@ -36,8 +36,10 @@ class userHandle:
             if str(username) in TimeOverUsers: # 강제로 종료된 user라면
                 # print('재접속')
                 if username in TimeOverUsers:  # 강제로 종료된 user 목록에서 username 삭제
+                    lock.acquire()
                     TimeOverUsers.remove(username)
-                
+                    lock.release()
+
                 lock.acquire() # 스레드 동기화를 막기위한 lock
                 self.users[username] = (conn, addr) #users에 추가
                 lock.release() # 업데이트 후 lock 해제
@@ -52,7 +54,9 @@ class userHandle:
         
         if username == 'quit': # 유저가 quit 버튼 눌렀을 때
             if username in TimeOverUsers:
+                lock.acquire()
                 TimeOverUsers.remove(username)
+                lock.release()
             return None
 
 
@@ -100,7 +104,9 @@ class userHandle:
             # registeruser 부분에서 이 배열에 만약에 저장되어 있는 애면
             # addr만 바꿔줌
             if username not in TimeOverUsers:
+                lock.acquire()
                 TimeOverUsers.append(username)
+                lock.release()
             print('사용자 퇴장: 대화 참여자 수 [%d]' %len(self.users))
             return -2
 
