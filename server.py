@@ -39,7 +39,6 @@ class userHandle:
                     lock.acquire()
                     TimeOverUsers.remove(username)
                     lock.release()
-
                 lock.acquire() # 스레드 동기화를 막기위한 lock
                 self.users[username] = (conn, addr) #users에 추가
                 lock.release() # 업데이트 후 lock 해제
@@ -157,10 +156,8 @@ class SocketHandle(socketserver.BaseRequestHandler):
                 self.request.close()
             else:
                 msg = self.request.recv(1024)
-                print(msg.decode())
                 while msg:
                     x = self.userman.messageHandler(username, msg.decode())
-                    print(x)
                     if x == -1 or x == -2: # 채팅 종료하는 경우
                         if x == -1: # 유저가 quit 버튼 눌렀을 때
                             self.request.send('채팅이 종료되었습니다.\n'.encode())
